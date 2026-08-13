@@ -1,4 +1,4 @@
-# VR Bombanana
+# RV & RA
 
 Um projeto experimental de **WebXR** (Realidade Virtual e Realidade Aumentada) desenvolvido com **Three.js**, **TypeScript** e **Vite**.
 
