@@ -84,6 +84,7 @@ export class XRCapabilityProbe {
   private activeMode: XRSessionMode | null = null;
   private referenceSpaceType: XRReferenceSpaceType | 'nenhum' = 'nenhum';
 
+  /** Estrutura consultável pelo restante da aplicação. */
   getReport(): Readonly<XRCapabilityReport> {
     return this.report;
   }
@@ -223,6 +224,8 @@ export class XRCapabilityProbe {
       })),
     };
 
+    // O WebXRManager do Three.js usa local-floor por padrão, mas não expõe um
+    // getter para o tipo configurado nesta versão.
     this.referenceSpaceType = 'local-floor';
     this.report.tracking.referenceSpace = this.referenceSpaceType;
 
@@ -288,7 +291,11 @@ export class XRCapabilityProbe {
   private render(): void {
     if (!this.panel) return;
     const report = this.report;
-    this.panel.replaceChildren();
+    // Aceita tanto #capability-content quanto o painel pai. Assim, mesmo que
+    // main.ts monte a sonda em #capability-report, controles estáticos não são
+    // apagados por replaceChildren().
+    const output = this.panel.querySelector<HTMLElement>('#capability-content') ?? this.panel;
+    output.replaceChildren();
 
     const header = element('header', 'report-header');
     header.append(
@@ -296,18 +303,18 @@ export class XRCapabilityProbe {
       element('h1', '', 'Relatório do dispositivo'),
       element('p', 'subtitle', report.environment.userAgent),
     );
-    this.panel.append(header);
+    output.append(header);
 
     const environment = element('section', 'report-card');
     environment.append(element('h2', '', 'Ambiente'));
     environment.append(row('Contexto seguro', report.environment.secureContext ? 'suportado' : 'não suportado'));
     environment.append(row('API WebXR', report.environment.webXRApi));
-    this.panel.append(environment);
+    output.append(environment);
 
     const modes = element('section', 'report-card');
     modes.append(element('h2', '', 'Tipos de sessão'));
     report.modes.forEach((mode) => modes.append(row(MODE_LABELS[mode.mode], mode.state, mode.detail)));
-    this.panel.append(modes);
+    output.append(modes);
 
     const controls = element('section', 'report-card');
     controls.append(element('h2', '', 'Consulta em sessão real'));
@@ -319,7 +326,7 @@ export class XRCapabilityProbe {
     );
     controls.append(buttons);
     if (report.lastError) controls.append(element('p', 'error-message', report.lastError));
-    this.panel.append(controls);
+    output.append(controls);
 
     const session = element('section', 'report-card');
     session.append(element('h2', '', 'Sessão ativa'));
@@ -330,7 +337,7 @@ export class XRCapabilityProbe {
     report.activeSession.features.forEach((feature) => {
       session.append(row(feature.name, feature.state, feature.detail));
     });
-    this.panel.append(session);
+    output.append(session);
 
     const inputs = element('section', 'report-card');
     inputs.append(element('h2', '', `Fontes de entrada (${report.inputs.length})`));
@@ -347,9 +354,9 @@ export class XRCapabilityProbe {
         inputs.append(item);
       });
     }
-    this.panel.append(inputs);
+    output.append(inputs);
 
-    this.panel.append(element('p', 'timestamp', `Atualizado: ${new Date(report.checkedAt).toLocaleString('pt-BR')}`));
+    output.append(element('p', 'timestamp', `Atualizado: ${new Date(report.checkedAt).toLocaleString('pt-BR')}`));
   }
 }
 
