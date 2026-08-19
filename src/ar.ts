@@ -43,11 +43,23 @@ export function setupARHitTest(
 
       if (!requested) {
         requested = true;
-        session.requestReferenceSpace('viewer').then((viewerSpace) => {
-          session.requestHitTestSource?.({ space: viewerSpace })?.then((source) => {
-            hitTestSource = source;
-          });
-        });
+        const enabledFeatures = (session as XRSession & {
+          enabledFeatures?: string[] | Set<string>;
+        }).enabledFeatures;
+        const enabled = enabledFeatures ? new Set(Array.from(enabledFeatures)) : null;
+
+        if (!enabled || enabled.has('hit-test')) {
+          void session
+            .requestReferenceSpace('viewer')
+            .then((viewerSpace) => session.requestHitTestSource?.({ space: viewerSpace }))
+            .then((source) => {
+              hitTestSource = source ?? null;
+            })
+            .catch(() => {
+              hitTestSource = null;
+              reticle.visible = false;
+            });
+        }
         session.addEventListener('end', () => {
           requested = false;
           hitTestSource = null;

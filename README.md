@@ -8,6 +8,14 @@ O projeto serve como um boilerplate interativo e educacional para criar cenas im
 
 ## Funcionalidades
 
+*   **Sonda de capacidades WebXR**:
+    *   Consulta real de `inline`, `immersive-vr` e `immersive-ar` com `isSessionSupported`.
+    *   Relatório visível no aparelho, sem depender do console.
+    *   Inspeção dos recursos efetivamente concedidos pela sessão.
+    *   Inventário das fontes de entrada, perfis, lateralidade, grip e hand tracking.
+    *   Medição de rastreamento 3DoF/6DoF para o visor e cada entrada.
+    *   Estados separados para recurso não suportado, acesso negado e resultado indeterminado.
+
 *   **Virtual Reality (VR) Imersivo**:
     *   Suporte a tracking de controllers 3D.
     *   Sistema de mira/apontamento por raio laser (raycast).
@@ -49,6 +57,7 @@ vr-bombanana/
 │       └── cubone.glb  # Modelo 3D de exemplo
 └── src/
     ├── main.ts         # Ponto de entrada, loop de renderização e inicialização WebXR
+    ├── capabilities.ts # Sonda, estrutura do relatório e interface visível
     ├── scene.ts        # Setup da cena, luzes, malhas (meshes) e animação básica
     ├── controllers.ts  # Gerenciamento de controllers VR (raio e interações)
     ├── ar.ts           # Lógica de AR e hit-testing (posicionamento na superfície)
