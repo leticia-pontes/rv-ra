@@ -1,11 +1,11 @@
-import * as THREE from 'three';
+﻿import * as THREE from 'three';
 import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFactory.js';
 
 /**
- * Configura os dois controllers XR:
+ * Configura os controllers XR:
  *  - modelo 3D do controle
- *  - um "raio" de apontamento
- *  - pegar/soltar objetos com o gatilho (selectstart/selectend)
+ *  - raio laser de mira
+ *  - pegar (attach) e soltar (reparenting) objetos simples ou grupos compostos (LEDs, fios, etc.)
  */
 export function setupControllers(
   renderer: THREE.WebGLRenderer,
@@ -22,9 +22,9 @@ export function setupControllers(
   ]);
   const rayLine = new THREE.Line(
     rayGeometry,
-    new THREE.LineBasicMaterial({ color: 0xffffff }),
+    new THREE.LineBasicMaterial({ color: 0x4f7cff }),
   );
-  rayLine.scale.z = 5;
+  rayLine.scale.z = 3;
 
   const controllers: THREE.XRTargetRaySpace[] = [];
   const selected = new Map<THREE.XRTargetRaySpace, THREE.Object3D>();
@@ -43,49 +43,79 @@ export function setupControllers(
     scene.add(grip);
   }
 
-  function intersect(controller: THREE.XRTargetRaySpace): THREE.Intersection | null {
+  /**
+   * Encontra a raiz interativa de um objeto filho (ex: se o raio acertar a perna do LED,
+   * retorna o grupo completo do LED registrado em `interactive`).
+   */
+  function getInteractiveRoot(object: THREE.Object3D | null): THREE.Object3D | null {
+    let curr = object;
+    while (curr && !interactive.includes(curr)) {
+      curr = curr.parent;
+    }
+    return curr;
+  }
+
+  function intersect(controller: THREE.XRTargetRaySpace): THREE.Object3D | null {
     tempMatrix.identity().extractRotation(controller.matrixWorld);
     raycaster.ray.origin.setFromMatrixPosition(controller.matrixWorld);
     raycaster.ray.direction.set(0, 0, -1).applyMatrix4(tempMatrix);
-    const hits = raycaster.intersectObjects(interactive, false);
-    return hits.length > 0 ? hits[0] : null;
+
+    // recursive = true para detectar partes filhas de grupos
+    const hits = raycaster.intersectObjects(interactive, true);
+    if (hits.length > 0) {
+      return getInteractiveRoot(hits[0].object);
+    }
+    return null;
   }
 
   function onSelectStart(controller: THREE.XRTargetRaySpace): void {
-    const hit = intersect(controller);
-    if (hit) {
-      const obj = hit.object;
-      controller.attach(obj); // "gruda" o objeto na mão
-      selected.set(controller, obj);
+    const target = intersect(controller);
+    if (target) {
+      // Reparenting: transfere o nó do 'scene' para a mão 'controller'
+      controller.attach(target);
+      selected.set(controller, target);
     }
   }
 
   function onSelectEnd(controller: THREE.XRTargetRaySpace): void {
     const obj = selected.get(controller);
     if (obj) {
-      scene.attach(obj); // solta de volta na cena
+      // Reparenting de retorno: devolve o nó para o espaço do mundo 'scene'
+      scene.attach(obj);
       selected.delete(controller);
     }
   }
 
   return {
-    /** Realça o objeto sob a mira de cada controller. */
+    /** Realça os materiais sob a mira de cada controller */
     update(): void {
-      for (const material of highlightReset) material.emissive.setHex(0x000000);
+      for (const { material, originalColor } of highlightReset) {
+        material.emissive.setHex(originalColor);
+      }
       highlightReset.length = 0;
 
       for (const controller of controllers) {
         if (selected.has(controller)) continue;
-        const hit = intersect(controller);
-        const mesh = hit?.object as THREE.Mesh | undefined;
-        const mat = mesh?.material as THREE.MeshStandardMaterial | undefined;
-        if (mat && 'emissive' in mat) {
-          mat.emissive.setHex(0x333333);
-          highlightReset.push(mat);
+        const target = intersect(controller);
+        if (target) {
+          target.traverse((child) => {
+            if ((child as THREE.Mesh).isMesh) {
+              const mesh = child as THREE.Mesh;
+              const mat = mesh.material as THREE.MeshStandardMaterial;
+              if (mat && 'emissive' in mat) {
+                highlightReset.push({ material: mat, originalColor: mat.emissive.getHex() });
+                mat.emissive.setHex(0x334466);
+              }
+            }
+          });
         }
       }
     },
   };
 }
 
-const highlightReset: THREE.MeshStandardMaterial[] = [];
+interface HighlightEntry {
+  material: THREE.MeshStandardMaterial;
+  originalColor: number;
+}
+const highlightReset: HighlightEntry[] = [];
