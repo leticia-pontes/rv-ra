@@ -26,7 +26,7 @@ orbit.dampingFactor = 0.05;
 orbit.update();
 
 // --- Controllers XR (VR) ---
-const controllers = setupControllers(renderer, xr.scene, xr.interactive);
+const controllers = setupControllers(renderer, xr.scene, xr.interactive, xr.protoboard);
 
 // --- AR hit-test ---
 const arHitTest = setupARHitTest(renderer, xr.scene);
@@ -34,7 +34,7 @@ const arHitTest = setupARHitTest(renderer, xr.scene);
 void capabilityProbe.initialize(renderer, report);
 
 // --- Suporte a Mouse no Desktop (Mudar peças de lugar com clique e arrasto) ---
-setupDesktopInteraction(renderer.domElement, xr.camera, xr.scene, xr.interactive, orbit);
+setupDesktopInteraction(renderer.domElement, xr.camera, xr.scene, xr.interactive, xr.protoboard, orbit);
 
 // --- Loop de animação ---
 const clock = new THREE.Clock();
@@ -67,6 +67,7 @@ function setupDesktopInteraction(
   camera: THREE.Camera,
   _scene: THREE.Scene,
   interactive: THREE.Object3D[],
+  protoboard: THREE.Object3D,
   orbitControls: OrbitControls,
 ) {
   const raycaster = new THREE.Raycaster();
@@ -74,6 +75,7 @@ function setupDesktopInteraction(
   const dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -1.025); // Plano na altura da mesa
   const planeIntersection = new THREE.Vector3();
   const offset = new THREE.Vector3();
+  const dropPoint = new THREE.Vector2();
 
   let draggedObject: THREE.Object3D | null = null;
 
@@ -90,6 +92,7 @@ function setupDesktopInteraction(
 
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    dropPoint.copy(mouse);
 
     raycaster.setFromCamera(mouse, camera);
     const hits = raycaster.intersectObjects(interactive, true);
@@ -98,6 +101,9 @@ function setupDesktopInteraction(
       const target = findInteractiveParent(hits[0].object);
       if (target) {
         draggedObject = target;
+        if (draggedObject.parent === protoboard) {
+          _scene.attach(draggedObject);
+        }
         orbitControls.enabled = false; // Desativa órbita para arrastar a peça
 
         if (raycaster.ray.intersectPlane(dragPlane, planeIntersection)) {
@@ -112,6 +118,7 @@ function setupDesktopInteraction(
 
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    dropPoint.copy(mouse);
 
     raycaster.setFromCamera(mouse, camera);
     if (raycaster.ray.intersectPlane(dragPlane, planeIntersection)) {
@@ -121,6 +128,12 @@ function setupDesktopInteraction(
 
   const stopDrag = () => {
     if (draggedObject) {
+      if (draggedObject.name === 'Fio Jumper') {
+        raycaster.setFromCamera(dropPoint, camera);
+        if (raycaster.intersectObject(protoboard, true).length > 0) {
+          protoboard.attach(draggedObject);
+        }
+      }
       draggedObject = null;
       orbitControls.enabled = true; // Reabilita órbita da câmera
     }

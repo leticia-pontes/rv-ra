@@ -11,6 +11,7 @@ export function setupControllers(
   renderer: THREE.WebGLRenderer,
   scene: THREE.Scene,
   interactive: THREE.Object3D[],
+  protoboard: THREE.Object3D,
 ) {
   const raycaster = new THREE.Raycaster();
   const tempMatrix = new THREE.Matrix4();
@@ -68,6 +69,17 @@ export function setupControllers(
     return null;
   }
 
+  function isJumperWire(object: THREE.Object3D): boolean {
+    return object.name === 'Fio Jumper';
+  }
+
+  function isOverProtoboard(controller: THREE.XRTargetRaySpace): boolean {
+    tempMatrix.identity().extractRotation(controller.matrixWorld);
+    raycaster.ray.origin.setFromMatrixPosition(controller.matrixWorld);
+    raycaster.ray.direction.set(0, 0, -1).applyMatrix4(tempMatrix);
+    return raycaster.intersectObject(protoboard, true).length > 0;
+  }
+
   function onSelectStart(controller: THREE.XRTargetRaySpace): void {
     const target = intersect(controller);
     if (target) {
@@ -80,8 +92,12 @@ export function setupControllers(
   function onSelectEnd(controller: THREE.XRTargetRaySpace): void {
     const obj = selected.get(controller);
     if (obj) {
-      // Reparenting de retorno: devolve o nó para o espaço do mundo 'scene'
-      scene.attach(obj);
+      if (isJumperWire(obj) && isOverProtoboard(controller)) {
+        protoboard.attach(obj);
+      } else {
+        // Reparenting de retorno: devolve o nó para o espaço do mundo 'scene'
+        scene.attach(obj);
+      }
       selected.delete(controller);
     }
   }

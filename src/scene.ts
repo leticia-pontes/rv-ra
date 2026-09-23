@@ -2,13 +2,14 @@
 
 /**
  * Encapsula a cena, iluminação e os objetos de circuito eletrônico:
- * - Mesa de laboratório e protoboard (estáticos)
- * - LEDs, Jumpers (fios) e Resistores (interativos e reposicionáveis)
+ * - Mesa de laboratório (estática)
+ * - Protoboard, LEDs, Jumpers (fios) e Resistores (interativos e reposicionáveis)
  */
 export class XRScene {
   readonly scene = new THREE.Scene();
   readonly camera: THREE.PerspectiveCamera;
   readonly interactive: THREE.Object3D[] = [];
+  readonly protoboard = new THREE.Group();
 
   constructor() {
     this.scene.background = new THREE.Color(0x111318);
@@ -101,7 +102,8 @@ export class XRScene {
    * Inclui divisão central e faixas de alimentação positiva e negativa.
    */
   private addProtoboard(): void {
-    const boardGroup = new THREE.Group();
+    const boardGroup = this.protoboard;
+    boardGroup.name = 'Protoboard';
     boardGroup.position.set(0, 1.008, -0.5);
 
     // Corpo plástico branco/bege
@@ -153,6 +155,7 @@ export class XRScene {
     }
 
     this.scene.add(boardGroup);
+    this.interactive.push(boardGroup);
   }
 
   /**
