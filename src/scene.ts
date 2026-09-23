@@ -9,6 +9,7 @@ export class XRScene {
   readonly scene = new THREE.Scene();
   readonly camera: THREE.PerspectiveCamera;
   readonly interactive: THREE.Object3D[] = [];
+  readonly workbench = new THREE.Group();
   readonly protoboard = new THREE.Group();
 
   constructor() {
@@ -54,7 +55,7 @@ export class XRScene {
 
   /** Bancada de trabalho onde a protoboard e peças repousam */
   private addWorkbench(): void {
-    const tableGroup = new THREE.Group();
+    const tableGroup = this.workbench;
 
     // Tampo da mesa (1.2m x 0.04m x 0.7m)
     const topGeo = new THREE.BoxGeometry(1.2, 0.04, 0.7);

@@ -12,6 +12,7 @@ export function setupControllers(
   scene: THREE.Scene,
   interactive: THREE.Object3D[],
   protoboard: THREE.Object3D,
+  workbench: THREE.Object3D,
 ) {
   const raycaster = new THREE.Raycaster();
   const tempMatrix = new THREE.Matrix4();
@@ -28,16 +29,20 @@ export function setupControllers(
   rayLine.scale.z = 3;
 
   const controllers: THREE.XRTargetRaySpace[] = [];
+  const rayLines: THREE.Line[] = [];
+  const raycastTargets = [...interactive, workbench];
   const selected = new Map<THREE.XRTargetRaySpace, THREE.Object3D>();
 
   for (let i = 0; i < 2; i++) {
     const controller = renderer.xr.getController(i);
-    controller.add(rayLine.clone());
+    const controllerRay = rayLine.clone();
+    controller.add(controllerRay);
     scene.add(controller);
 
     controller.addEventListener('selectstart', () => onSelectStart(controller));
     controller.addEventListener('selectend', () => onSelectEnd(controller));
     controllers.push(controller);
+    rayLines.push(controllerRay);
 
     const grip = renderer.xr.getControllerGrip(i);
     grip.add(modelFactory.createControllerModel(grip));
@@ -111,8 +116,14 @@ export function setupControllers(
       highlightReset.length = 0;
 
       for (const controller of controllers) {
-        if (selected.has(controller)) continue;
+        const ray = rayLines[controllers.indexOf(controller)];
+        if (selected.has(controller)) {
+          ray.scale.z = 3;
+          continue;
+        }
         const target = intersect(controller);
+        const hitDistance = raycaster.intersectObjects(raycastTargets, true)[0]?.distance ?? 3;
+        ray.scale.z = Math.min(hitDistance, 3);
         if (target) {
           target.traverse((child) => {
             if ((child as THREE.Mesh).isMesh) {

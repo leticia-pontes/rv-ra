@@ -26,7 +26,13 @@ orbit.dampingFactor = 0.05;
 orbit.update();
 
 // --- Controllers XR (VR) ---
-const controllers = setupControllers(renderer, xr.scene, xr.interactive, xr.protoboard);
+const controllers = setupControllers(
+  renderer,
+  xr.scene,
+  xr.interactive,
+  xr.protoboard,
+  xr.workbench,
+);
 
 // --- AR hit-test ---
 const arHitTest = setupARHitTest(renderer, xr.scene);
