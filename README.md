@@ -46,7 +46,7 @@ O projeto serve como um boilerplate interativo e educacional para criar cenas im
 ## Estrutura de Arquivos
 
 ```text
-vr-bombanana/
+rv-ra/
 ├── .nvmrc              # Versão recomendada do Node.js (v24.15.0)
 ├── index.html          # Página principal e container do app
 ├── package.json        # Dependências e scripts npm

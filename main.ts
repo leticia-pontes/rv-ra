@@ -1,9 +1,9 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { XRScene } from './scene';
-import { setupControllers } from './controllers';
-import { setupARHitTest } from './ar';
-import { capabilityProbe } from './capabilities';
+import { XRScene } from './src/scene';
+import { setupControllers } from './src/controllers';
+import { setupARHitTest } from './src/ar';
+import { capabilityProbe } from './src/capabilities';
 
 // --- Renderer ---
 const container = document.getElementById('app') as HTMLDivElement;
@@ -26,7 +26,13 @@ orbit.target.set(0, 1.2, -1);
 orbit.update();
 
 // --- Controllers XR ---
-const controllers = setupControllers(renderer, xr.scene, xr.interactive);
+const controllers = setupControllers(
+  renderer,
+  xr.scene,
+  xr.interactive,
+  xr.protoboard,
+  xr.workbench,
+);
 
 // --- AR hit-test ---
 const arHitTest = setupARHitTest(renderer, xr.scene);
