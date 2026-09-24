@@ -1,7 +1,7 @@
 ﻿# Um Arquivo, Nove Atos: O Fio da Execução
 
-> **Documento de Leitura Conceitual**  
-> *Este arquivo não foi feito para ser executado diretamente.* O código real do projeto está distribuído em módulos especializados (`src/main.ts`, `src/scene.ts`, `src/controllers.ts`, etc.).  
+> **Documento de Leitura Conceitual**
+> *Este arquivo não foi feito para ser executado diretamente.* O código real do projeto está distribuído em módulos especializados (`src/main.ts`, `src/scene.ts`, `src/controllers.ts`, etc.).
 > Aqui, o código é apresentado na **ordem cronológica exata de execução**, revelando a vida da aplicação: do nascimento do palco e montagem do **Grafo de Cena** até o laço contínuo do **Render Loop** e a mutação de nós com o **Reparenting**.
 
 ---
@@ -216,7 +216,7 @@ renderer.setAnimationLoop((_timestamp, frame) => {
   // Para cada controle, verifica se o raio intercepta algum componente interativo:
   for (const controller of controllers) {
     if (selected.has(controller)) continue; // Se já está segurando algo, ignora
-    
+
     // Intersecção matemática entre o vetor do controle e os nós da cena:
     tempMatrix.identity().extractRotation(controller.matrixWorld);
     raycaster.ray.origin.setFromMatrixPosition(controller.matrixWorld);
