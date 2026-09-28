@@ -1,4 +1,4 @@
-# Especificação do Projeto Integrador
+# Especificação do Projeto Integrador — Módulo 03
 
 ## Bloco A - A cena
 
@@ -6,112 +6,135 @@
 
 - **Grupo:** Grupo 5
 - **Integrantes:** Caio Ocon, Leticia Alves, Leandro, Laura Yumi, Breno Colonello
-- **Cena Escolhida:** Circuito em placa de prototipagem.
-- **Descrição:** Uma bancada contendo uma protoboard física onde o usuário insere componentes eletrônicos (fios, resistores e LEDs) para fechar um circuito elétrico funcional.
-- **Justificativa e Custo:** Esta cena endurece o orçamento de quadro, memória e carregamento devido às centenas de furos da placa, e o grupo topa esse custo para aprender a dominar o teto da máquina otimizando repetições. O grupo topa esse custo porque o desafio principal é a lógica de grafos (nós e conexões) e a otimização estrutural.
-- **Armadilha e Solução:** A armadilha é o excesso de objetos (centenas de furos na placa) derrubando o desempenho. A solução será desenhar a placa de forma simplificada, usando instanciamento de geometria (GPU instancing) para os furos e contatos, em vez de modelar cada orifício individualmente.
+- **Cena Escolhida:** Circuito em placa de prototipagem (Protoboard).
+- **Descrição:** Uma bancada de laboratório contendo uma protoboard física onde o operador apanha, translada e insere componentes eletrônicos (fios jumpers, resistores e LEDs) para fechar um circuito funcional.
+- **Justificativa e Custo:** Esta cena impõe custo elevado de processamento e geometria devido à densidade de orifícios e componentes metálicos repetidos. O grupo assumiu este custo para dominar as técnicas de otimização em grafo de cena, agrupamento hierárquico e renderização em tempo real com controle orçamentário.
+- **Armadilha e Solução:** A armadilha é a sobrecarga de Draw Calls gerada por centenas de furos e componentes independentes. A solução no Módulo 03 foi unificar a protoboard e seus furos em geometrias simplificadas e agrupar componentes em nós de subárvore (`THREE.Group`), preparando o terreno para GPU Instancing nos módulos subsequentes.
+- **Registro de Decisão Mudada:** No Módulo 01 previa-se importar malhas poligonais externas (.gltf) para os componentes. No Módulo 03, decidiu-se construir 100% dos objetos por código através de geometrias primitivas nativas do Three.js em escala métrica 1:1. **Motivo:** Isolar o teste estrutural do Grafo de Cena e a operação atômica de reparenting sem introduzir custos e falhas de carregamento de arquivos externos, mantendo a geometria crua conforme a diretriz pedagógica deste módulo.
 
 ### Seção 2. O que a pessoa faz ali
 
-A pessoa chega ao ambiente e vê uma protoboard vazia e uma bandeja com componentes (LEDs, resistores e jumpers). Ela apanha um componente por vez e o aproxima dos furos da placa. Quando a peça está alinhada, ela a solta para encaixar. O ambiente considera a tarefa cumprida quando um circuito fechado é formado ligando a trilha de energia à trilha de terra passando pelo LED, fazendo-o acender.
+A pessoa posiciona-se em frente à bancada virtual e observa a protoboard e bandejas organizadoras com componentes eletrônicos. Ela apanha componentes com o cursor/mão, ajusta sua elevação e rotação, e os posiciona sobre os orifícios da placa para encaixe. O ambiente considera a tarefa concluída quando um circuito fechado contínuo é estabelecido entre o barramento positivo (VCC) e o barramento negativo (GND), passando pelo resistor e pelo LED, resultando no acendimento luminoso da peça.
 
-- **O que se faz com as mãos:** O usuário utiliza as mãos para fazer o movimento de pinça, apanhando, transladando e rotacionando componentes pequenos com precisão.
-- **O que muda com o visor:** O visor oferece a percepção de profundidade estereoscópica necessária para alinhar os pinos finos dos componentes diretamente sobre os furos minúsculos, algo difícil de julgar em uma tela 2D.
-- **O que a câmera precisa provar:** A cena será ancorada e alinhada a uma mesa física real do laboratório, permitindo que o usuário ande ao redor da mesa para ver o circuito montado por diferentes ângulos sem que a placa deslize no espaço real.
+- **O que se faz com as mãos:** O usuário realiza pinça, elevação nos eixos X, Y e Z e rotação de 90 graus dos componentes, transportando-os da bandeja para a placa.
+- **O que muda com o visor:** O visor estereoscópico fornece percepção direta de paralaxe e profundidade para julgar a altura dos pinos sobre a placa, reduzindo a tentativa e erro típica de telas 2D.
+- **O que a câmera precisa provar:** A cena será ancorada horizontalmente sobre uma mesa física real do laboratório por meio de hit-testing (AR), mantendo a protoboard estável enquanto o usuário caminha ao redor.
 
 ### Seção 3. Inventário de objetos
 
-| Objeto         | Quantos | Origem                          | Move? | Observação                                             |
-| :------------- | :------ | :------------------------------ | :---- | :----------------------------------------------------- |
-| Protoboard     | 1       | Modelo importado, licença livre | Não   | Base fixa do circuito.                                 |
-| Jumpers (Fios) | 15      | Construído por código           | Sim   | Malhas geradas proceduralmente para ligar dois pontos. |
-| Resistores     | 5       | Modelo importado                | Sim   | Todos iguais, muda apenas as faixas de cor.            |
-| LEDs           | 3       | Modelo importado                | Sim   | Lâmpadas que alteram o material (acendem) no sucesso.  |
-| Mesa de apoio  | 1       | Construída por código           | Não   | Superfície de colisão invisível na RA.                 |
+| Objeto | Quantidade | Origem / Construção | Move? | Parentesco no Grafo | Observações Técnicas |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Bancada de Laboratório** | 1 | Código (`THREE.BoxGeometry` + `CylinderGeometry`) | Não | Filho de `Scene` | Tampo de 1,20 m x 0,70 m x 0,04 m a 0,98 m do piso com 4 pernas e 2 bandejas organizadoras. |
+| **Protoboard** | 1 | Código (`THREE.Group` composto) | Sim | Filho de `Scene` | Base de 16,5 cm x 5,5 cm x 1,2 cm. Pode ser transladada na bancada para comprovar que mover o pai translada seus filhos. |
+| **Fios Jumpers** | 3 | Código (`THREE.TubeGeometry` + `CubicBezierCurve3`) | Sim | `Scene` ou `Protoboard` | Fios em arco (Azul 4,5 cm, Laranja 6,0 cm, Branco 3,5 cm) com terminais condutores de 0,8 cm. |
+| **LEDs Difusos** | 3 | Código (`THREE.Group` composto) | Sim | `Scene` ou `Protoboard` | Vermelho, Verde e Amarelo (cúpula de 0,5 cm, aba e pinos condutores de 1,4 cm e 1,1 cm). |
+| **Resistor** | 1 | Código (`THREE.Group` composto) | Sim | `Scene` ou `Protoboard` | Corpo cerâmico de 1,5 cm x 0,3 cm com código de 4 faixas de cor (1kΩ) e terminais metálicos. |
+| **Monitor de Custo 3D** | 1 | Código (`THREE.Group` + `CanvasTexture`) | Não | Filho de `Scene` | Instrumento digital na bancada (18 cm x 11 cm) com taxa de quadros e custo em ms em tempo real. |
 
 ### Seção 4. O espaço e as escalas
 
-A placa de prototipagem tem 16,5 cm de comprimento por 5,5 cm de largura. Os jumpers variam de 2 cm a 10 cm. Os LEDs possuem 0,5 cm de diâmetro. O ambiente total necessário é o de uma mesa de trabalho padrão (aproximadamente 1,20 m x 0,60 m).
-A cena operará em apenas uma escala legítima: escala real (1:1). Tanto na tela, quanto no visor e na câmera, os componentes terão seu tamanho físico verdadeiro, exigindo que o usuário se aproxime da mesa (real ou virtual) para manipular as peças.
+A cena opera estritamente na escala métrica real (1 unidade no Three.js = 1,00 metro no mundo físico):
+
+- **Protoboard:** 0,165 m de comprimento, 0,055 m de largura e 0,012 m de altura.
+- **Bancada:** 1,20 m de largura, 0,70 m de profundidade e altura do tampo a 1,00 m do chão virtual (Y = 1,008 m com a placa).
+- **Câmera / Observador:** Posicionada a (X = 0 m, Y = 1,45 m, Z = 0,45 m), simulando a altura ergonômica dos olhos de um adulto sentado ou inclinado em frente à bancada.
+- **Componentes:** Pinos metálicos com diâmetro de 1,2 mm (raio de 0,0006 m), cúpula dos LEDs com raio de 5 mm e jumpers com arco de 3,5 cm a 6,0 cm de vão.
+
+---
 
 ## Bloco B - As regras
 
 ### Seção 5. As ações do usuário
 
-| Ação       | O que a pessoa faz                    | O que o sistema faz                               | Se não puder                                                                      |
-| :--------- | :------------------------------------ | :------------------------------------------------ | :-------------------------------------------------------------------------------- |
-| Apontar    | Mira um componente na bandeja.        | O componente ganha um contorno amarelo.           | Nada acontece (nenhum realce).                                                    |
-| Apanhar    | Aciona o gatilho/clique sobre a peça. | A peça flutua e acompanha o movimento da mão.     | Toca som de erro surdo; exibe texto "Sem peças restantes".                        |
-| Rotacionar | Move o pulso/scroll do mouse.         | A peça gira em incrementos de 90 graus.           | Não se aplica (sempre pode girar se estiver na mão).                              |
-| Encaixar   | Aproxima os pinos da placa e solta.   | A peça assenta nos furos (snap) e trava na grade. | A peça volta para a bandeja; som de recusa (furo ocupado ou fora de alinhamento). |
+| Ação | O que a pessoa faz | O que o sistema faz | Se não puder |
+| :--- | :--- | :--- | :--- |
+| **Apontar (Hover)** | Passa o mouse ou mira o raio laser sobre a peça. | Realce visual (cursor vira mãozinha no desktop; material ganha emissivo azul no VR). | Nenhum realce visual ocorre. |
+| **Apanhar (Grab)** | Clica e segura o botão esquerdo (desktop) ou aperta o gatilho (VR). | O objeto se desanexa de seu pai anterior (`.attach()` para a cena/controlador) e eleva 2,5 cm no Y. | Peça travada ou fora de alcance não se move. |
+| **Transladar (X/Z)** | Arrasta o mouse sobre a tela ou move o controle no espaço. | O objeto acompanha o deslocamento horizontal mantendo a altura Y configurada. | Posição é limitada ao volume visível da bancada. |
+| **Ajustar Altura (Y)** | Gira a roda do mouse (Scroll) ou segura `Shift` + arrasto vertical, ou teclas `W`/`S`. | O objeto sobe ou desce no eixo Y na faixa de 1,00 m a 1,40 m. | Altura é travada nos limites inferior (mesa) e superior. |
+| **Rotacionar** | Pressiona a tecla `R` no teclado (ou move pulso no VR). | O objeto gira 90 graus em torno do eixo Y local. | Sem efeito se nenhum objeto estiver selecionado. |
+| **Encaixar / Soltar** | Solta o botão do mouse ou gatilho sobre a protoboard. | O objeto troca de pai para a `Protoboard` via reparenting atômico (`.attach()`) e assenta nos furos (Y local = 0,009 m). | Se solto fora da placa, é reparentado para a `Scene` e repousa no tampo da mesa (Y = 1,018 m). |
 
 ### Seção 6. A tarefa e sua validação
 
-- **Estado Inicial:** Placa vazia; componentes disponíveis na bandeja lateral.
-- **Estado Final:** Placa com componentes formando um circuito fechado entre VCC e GND, com o LED aceso.
-- **Regra e Ordem:** A ordem de montagem é totalmente livre (qualquer caminho que feche o conjunto vale).
-- **Validação:** A cada encaixe, o sistema roda um algoritmo de busca em grafos (DFS/BFS) partindo do pino VCC. O sucesso é declarado automaticamente no momento em que o grafo encontra um caminho contínuo de nós conectados até o GND passando por um nó do tipo "LED".
+- **Estado Inicial:** Bancada com protoboard vazia e peças organizadas nas bandejas laterais (LEDs e resistores à direita, fios à esquerda).
+- **Estado Final:** Circuito elétrico contínuo fechado entre a trilha positiva (VCC) e a trilha de terra (GND), contendo pelo menos um fio jumper, um resistor e um LED inseridos nos barramentos correspondentes, resultando na ativação emissiva do LED.
+- **Validação:** Validação estrutural de nós de circuito via percurso em grafo topológico a cada operação de encaixe bem-sucedida.
 
 ### Seção 7. Regras de encaixe e tolerâncias
 
-Para que o usuário não sofra uma "tortura de precisão", os pinos não precisam tocar exatamente no furo.
+Para assegurar usabilidade sem exigir microprecisão milimétrica:
 
-- **Folga de posição:** 1,5 centímetros. Se o pino central do componente estiver dentro desse raio em relação ao furo desejado, ele salta (snap) para o centro do furo.
-- **Folga de ângulo:** 25 graus. Se a inclinação da mão passar disso, o sistema assume que o usuário está tentando inserir a peça torta e recusa o encaixe.
+- **Folga de posição horizontal:** Tolerância de captura de até 10,0 cm no eixo longitudinal (X) e 4,5 cm no eixo transversal (Z) a partir do centro da protoboard. Ao soltar a peça dentro desta zona, o sistema realiza o encaixe automático.
+- **Folga de altura vertical:** O encaixe é aceito se o componente estiver entre -4,0 cm e +20,0 cm da superfície da placa no momento da soltura.
+- **Snap de assentamento:** Ao encaixar, o Y local do componente é ajustado atomicamente para `0,009 m`, garantindo alinhamento visual com a furação plástica.
 
 ### Seção 8. Retorno ao usuário
 
-- **Objeto mirado:** Contorno (outline) amarelo em volta da malha 3D.
-- **Objeto apanhado:** Projeta uma sombra artificial (drop shadow) diretamente abaixo de si para ajudar na noção de profundidade.
-- **Encaixe aceito:** Som curto mecânico (clique de plástico) e a peça perde o contorno.
-- **Encaixe recusado:** Som curto grave (bipe de erro) e a peça retorna suavemente (interpolação) à sua origem na bandeja.
-- **Tarefa concluída:** O material do LED muda para emissivo (brilha em vermelho) e um som de sucesso é tocado.
+- **Objeto sob a mira:** Cursor `grab` no desktop e emissivo suave azulino (`0x334466`) nas malhas sob o laser no VR.
+- **Objeto apanhado:** Elevação imediata de +2,5 cm no Y e cursor `grabbing`.
+- **Encaixe na protoboard:** Reparenting atômico registrado no console e no HUD de tela, com atualização imediata da contagem de nós filhos da placa.
+- **Sucesso do circuito:** O material da cúpula do LED altera sua cor emissiva para brilho intenso com ativação de ponto de luz local.
+
+---
 
 ## Bloco C - A máquina
 
 ### Seção 9. Os três regimes
 
-| Aspecto                           | Na tela                                                    | No visor                                                    | Pela câmera                                                  |
-| :-------------------------------- | :--------------------------------------------------------- | :---------------------------------------------------------- | :----------------------------------------------------------- |
-| **Como se olha**                  | Mouse para girar a câmera ao redor do centro da mesa.      | Movimento natural da cabeça no espaço 3D (6DOF).            | Movimento do celular ao redor da mesa física.                |
-| **Como se aponta e age**          | Cursor do mouse (Raycast do centro da tela) + Clique.      | Apontamento com o controle + Gatilho.                       | Toque na tela sobre o objeto projetado na imagem real.       |
-| **Escala da cena**                | Renderizada no centro da tela.                             | 1:1, usuário percebe a placa com 16,5 cm na sua frente.     | 1:1, sobreposta a uma mesa real do usuário.                  |
-| **O que a cena faz de diferente** | Interface com ícones de ajuda fixos nos cantos da tela.    | Rastreamento total de mãos para apanhar objetos.            | Busca de planos horizontais reais para ancoragem da placa.   |
-| **O que não existe neste regime** | Sem percepção real de profundidade e sem ancoragem física. | Sem necessidade de detectar planos do mundo real (VR puro). | Sem oclusão perfeita das mãos do usuário passando na frente. |
+> **Declaração do Estado Atual (Módulo 03):** O regime **Na tela (inline)** é o **único plenamente funcional neste ponto do percurso e roda sem equipamento adicional em qualquer computador convencional**. Os regimes **No visor (VR)** e **Pela câmera (AR)** contam com a sonda de capacidades de hardware ativa (`src/capabilities.ts`) e infraestrutura de controladores e hit-test preparados, constituindo metas de entrega para os blocos posteriores quando o hardware for disponibilizado.
+
+| Aspecto | Na tela (Inline) — **Ativo** | No visor (Immersive VR) — *Em preparação* | Pela câmera (Immersive AR) — *Em preparação* |
+| :--- | :--- | :--- | :--- |
+| **Mundo do Observador** | **Apresenta a cena numa janela sem tocá-lo.** Não altera o ambiente físico de quem assiste. | **Substitui o mundo físico por inteiro** por um laboratório tridimensional imersivo. | **Mantém o mundo real e deposita objetos sobre ele** (superfície da mesa do mundo real). |
+| **Espaço de Referência** | Espaço Euclidiano local de janela WebGL (câmera de projeção em perspectiva). | `local-floor` (origem no solo da sala física, 6 graus de liberdade). | `local-floor` com `viewer` como espaço de referência para hit-testing. |
+| **O que é Rastreamento** | Coordenadas 2D do ponteiro do mouse e orientação esférica da câmera (OrbitControls). | Posição e orientação absoluta 6DoF da cabeça (HMD) e dos dois controladores manuais. | Posição e pose 6DoF da câmera do smartphone e raios de projeção contra o chão/mesa. |
+| **Contra o que Registra** | Registrado contra o canvas HTML na janela do navegador. | Registrado contra o espaço de rastreamento do chão da sala física. | Registrado contra os planos físicos horizontais reais detectados via hit-test da câmera. |
+| **Equipamento Necessário** | **Nenhum.** Qualquer computador com navegador web moderno. | Headset de Realidade Virtual com controles (Meta Quest / PCVR). | Smartphone compatível com ARCore/WebXR com câmera ativa. |
 
 ### Seção 10. Orçamento e desempenho
 
-- **Inventário Total:** Aproximadamente 25 objetos manipuláveis + 1 placa base de alta repetição geométrica.
-- **Meta de Fluidez:** 60 quadros por segundo constantes, para evitar mal-estar físico no visor.
-- **Repetição:** Os furos metálicos da protoboard. Serão usados shaders simples e instanciamento para não sobrecarregar a GPU integrada das máquinas do laboratório.
-- **Ordem de Degradação:** Se a taxa de quadros cair abaixo de 45fps, o sistema irá, nesta ordem: 1) Desligar as sombras dinâmicas projetadas pelas peças; 2) Trocar o modelo 3D dos componentes para caixas coloridas simples (LOD baixo); 3) Desativar o antialiasing.
+- **Teto Orçamentário Declarado:** **16,67 ms por quadro** (taxa constante de 60 quadros por segundo em regime de tela).
+- **Avanço contra o Relógio:** O avanço da cena e da física não é atrelado à contagem de quadros (`frames`), mas sim ao delta de tempo real medido a cada iteração via `THREE.Clock.getDelta()`. Dispositivos mais rápidos ou mais lentos avançam a simulação na mesma velocidade temporal.
+- **Indicador Visível na Cena:** Implementado em duas frentes complementares:
+  1. **HUD de Tela em Tempo Real (`#scene-cost-indicator`):** Exibe FPS, tempo de quadro em ms, status ("DENTRO DO TETO" vs "ACIMA DO TETO"), Draw Calls e Triângulos da GPU.
+  2. **Monitor Físico 3D no Laboratório (`MonitorCustoQuadro3D`):** Um instrumento digital modelado na bancada com `CanvasTexture` atualizada a cada quarto de segundo.
+- **Ordem de Degradação:** Caso o custo ultrapasse 20,0 ms por mais de 60 quadros consecutivos:
+  1. Desativar sombras dinâmicas da luz direcional (`dirLight.castShadow = false`);
+  2. Reduzir a taxa de atualização do display 3D de diagnóstico;
+  3. Desativar o antialiasing do WebGLRenderer.
 
 ### Seção 11. Erros, limites e degradação
 
-- **Regime não suportado:** Se a máquina não tiver suporte a WebXR (VR), um aviso em texto 2D flutuante dirá "Visor não detectado. Iniciando em modo de Tela" e o caso base será carregado.
-- **Câmera negada:** Se o usuário recusar a permissão da câmera no celular, o sistema avisará "Câmera necessária para Realidade Aumentada" e carregará o regime de tela com um fundo cinza.
-- **Rastreamento perdido:** Se a câmera apontar para uma parede lisa, a protoboard congela na última posição conhecida e fica semitransparente até o chão/mesa ser detectado novamente.
-- **Fora de alcance:** Se o usuário soltar uma peça fora dos limites da grade da protoboard (espaço útil), a peça é instantaneamente teletransportada de volta para a bandeja.
+- **WebXR não disponível:** Se o navegador não suportar a API WebXR, a sonda de capacidades acusa o estado `"não suportado"`, oculta os botões de sessão imersiva e mantém o regime de tela perfeitamente ativo e navegável.
+- **Permissão de Câmera/VR negada:** O erro `NotAllowedError` é capturado e classificado separadamente como `"negado"` pela sonda, sem travar a aplicação nem causar erro silencioso.
+- **Peça solta fora do alcance:** Peças soltas longe da protoboard permanecem repousadas no tampo ou bandejas da bancada, sem sofrer perdas ou comportamentos instáveis.
+
+---
 
 ## Bloco D - O trabalho
 
 ### Seção 12. Ativos, formatos e licenças
 
-| Ativo                 | Origem                | Licença         | Endereço            |
-| :-------------------- | :-------------------- | :-------------- | :------------------ |
-| Protoboard 3D (.gltf) | Sketchfab (Usuário X) | CC-BY 4.0       | [Link do Sketchfab] |
-| LED 3D (.gltf)        | Criado pelo grupo     | Domínio Público | Repositório local   |
-| Som de clique (.wav)  | Freesound.org         | CC0             | [Link do Freesound] |
+> **Atualização do Módulo 03:** Todos os ativos visuais presentes no estado atual da entrega foram construídos proceduralmente em código pelo grupo utilizando primitivas do Three.js, com custo zero de carregamento externo e domínio público integral.
+
+| Ativo | Formato / Tipo | Origem | Licença | Finalidade |
+| :--- | :--- | :--- | :--- | :--- |
+| **Bancada e Bandejas** | Geometrias procedurais (`BoxGeometry`, `CylinderGeometry`) | Código próprio (`src/scene.ts`) | Autoria própria | Suporte físico da cena. |
+| **Protoboard Estrutural** | Malhas agrupadas em `THREE.Group` | Código próprio (`src/scene.ts`) | Autoria própria | Base e barramento de alimentação. |
+| **Fios Jumpers, LEDs e Resistores** | Tubos de Bézier, cilindros e esferas | Código próprio (`src/scene.ts`) | Autoria própria | Componentes de circuito móveis. |
+| **Monitor Digital 3D** | Caixa plástica + `CanvasTexture` dinâmico | Código próprio (`src/performance.ts`) | Autoria própria | Indicador de custo dentro do mundo virtual. |
+| **Tipografia Digital** | Web Fonts do sistema (monospace / sans-serif) | CSS nativo | Livre | Renderização dos números de diagnóstico. |
 
 ### Seção 13. Plano de construção por blocos
 
-- **Bloco 1:** Ambiente base rodando no regime de tela, placa visível, câmera orbitando com o mouse (sem peças).
-- **Bloco 2:** Ações de apontar, apanhar e transladar componentes em 3D implementadas e funcionando com mouse.
-- **Bloco 3:** Lógica de encaixe (snap) implementada; sistema de grafos reconhece o circuito e acende o LED.
-- **Bloco 4:** Integração do WebXR. Suporte final ao visor e à câmera (ancoragem) com testes de degradação.
+- **Bloco 1 (Concluído - Módulo 01):** Especificação formal, definição do domínio da protoboard e declaração dos três regimes.
+- **Bloco 2 (Concluído - Módulo 02):** Sonda de capacidades WebXR e relatório visível de hardware e permissões.
+- **Bloco 3 (Concluído - Módulo 03):** Construção da cena como Grafo de Cena hierárquico, parentesco por razão de projeto (jumper filho da protoboard), reparenting atômico com preservação matemática de posição mundial, laço temporal contra o relógio e indicador de custo de quadro visível.
+- **Bloco 4 (Próximo - Módulo 04):** Modelagem e substituição progressiva por malhas poligonais e texturas PBR, introdução da lógica de circuitos e fechamento da tarefa.
 
 ### Seção 14. Riscos, decisões em aberto e declarações
 
-- **Riscos:** A lógica de grafos para verificar o circuito pode se tornar pesada a cada clique. A mitigação será rodar a verificação apenas no momento exato em que um encaixe for aceito.
-- **Decisões em aberto:** Ainda não sabemos se a folga de ângulo de 25 graus para encaixe é restrita demais no controle de VR. Testaremos no visor assim que o Bloco estiver pronto para definir o número final.
-- **Declaração de IA:** Ferramentas de inteligência artificial foram utilizadas para debater e estruturar ideias e sujestões para o rascunho desta especificação e organizar as formatações em Markdown. Toda a lógica estrutural foi revisada manualmente pelo grupo para garantir que conseguimos implementar o código necessário.
+- **Riscos Identificados:** Acúmulo de Draw Calls com a inserção de dezenas de pinos metálicos nos próximos módulos. **Mitigação:** Agrupamento em `InstancedMesh` assim que a malha final dos pinos for modelada.
+- **Decisões em Aberto:** Ajustar o feedback sonoro de encaixe mecânico (clique audível) no próximo módulo, testando a resposta tátil e auditiva em headset VR.
+- **Declaração de Autoria e IA:** Assistentes de inteligência artificial foram consultados na revisão de sintaxe, conferência de matrizes matemáticas de reparenting e auditoria dos requisitos da rubrica. Todas as decisões de arquitetura de software, hierarquia de classes, modelos matemáticos e implementação de código foram validadas e testadas pela equipe.

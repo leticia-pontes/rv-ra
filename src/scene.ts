@@ -1,4 +1,4 @@
-﻿import * as THREE from 'three';
+import * as THREE from 'three';
 
 /**
  * Encapsula a cena, iluminação e os objetos de circuito eletrônico:
