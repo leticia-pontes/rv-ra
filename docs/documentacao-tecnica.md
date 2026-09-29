@@ -433,9 +433,8 @@ nem a atualizacao da orbita presente em `src/main.ts`.
 - Linhas 5-9 definem codificacao, viewport, titulo e carregam `src/theme.ts`.
 - Linha 11 carrega `style.css`.
 - Linha 15 cria `#app`, destino do canvas.
-- Linhas 16-20 criam uma faixa de dicas de uso no desktop. A dica de arrastar
-  funciona; as de `Scroll`/`Shift` e tecla `R` ainda nao tem codigo
-  correspondente.
+- Linhas 16-20 criam uma faixa de dicas de uso no desktop: arrastar peca,
+  girar a camera e aproximar com a roda do mouse.
 - Linhas 22-34 criam o painel de capacidades e seus controles.
 - Linha 36 carrega `src/main.ts`, iniciando a aplicacao.
 
@@ -517,8 +516,7 @@ Descrito na especificacao, mas ainda nao implementado nos arquivos atuais:
 - Instanciamento GPU dos furos.
 - LOD automatico e degradacao abaixo de 45 FPS.
 - Ancoragem AR persistente da protoboard.
-- Ajuste de altura com `Scroll`/`Shift` e rotacao com a tecla `R` (a dica ja
-  aparece no `index.html`).
+- Ajuste de altura com `Scroll`/`Shift` e rotacao com a tecla `R`.
 
 Essa diferenca e importante: [docs/especificacao.md](especificacao.md) descreve
 o comportamento desejado do projeto, enquanto este documento descreve o que o
