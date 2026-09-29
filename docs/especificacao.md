@@ -9,8 +9,16 @@
 - **Cena Escolhida:** Circuito em placa de prototipagem (Protoboard).
 - **Descrição:** Uma bancada de laboratório contendo uma protoboard física onde o operador apanha, translada e insere componentes eletrônicos (fios jumpers, resistores e LEDs) para fechar um circuito funcional.
 - **Justificativa e Custo:** Esta cena impõe custo elevado de processamento e geometria devido à densidade de orifícios e componentes metálicos repetidos. O grupo assumiu este custo para dominar as técnicas de otimização em grafo de cena, agrupamento hierárquico e renderização em tempo real com controle orçamentário.
-- **Armadilha e Solução:** A armadilha é a sobrecarga de Draw Calls gerada por centenas de furos e componentes independentes. A solução no Módulo 03 foi unificar a protoboard e seus furos em geometrias simplificadas e agrupar componentes em nós de subárvore (`THREE.Group`), preparando o terreno para GPU Instancing nos módulos subsequentes.
-- **Registro de Decisão Mudada:** No Módulo 01 previa-se importar malhas poligonais externas (.gltf) para os componentes. No Módulo 03, decidiu-se construir 100% dos objetos por código através de geometrias primitivas nativas do Three.js em escala métrica 1:1. **Motivo:** Isolar o teste estrutural do Grafo de Cena e a operação atômica de reparenting sem introduzir custos e falhas de carregamento de arquivos externos, mantendo a geometria crua conforme a diretriz pedagógica deste módulo.
+- **Armadilha e Solução:** A armadilha é a sobrecarga de Draw Calls gerada por centenas de furos e componentes independentes. No Módulo 03 a placa mostra uma amostra de 84 furos (uma placa real deste tamanho tem cerca de 830), cada um como malha separada dentro do grupo da protoboard, e cada componente é um `THREE.Group` com suas peças como filhas. O instanciamento dos furos (`InstancedMesh`) ficou para quando a placa tiver todos os furos (ver registro de decisões abaixo).
+- **Registro de decisões que mudaram desde o Módulo 01:**
+  1. **Modelos importados → formas criadas por código.** No Módulo 01 a placa, os LEDs e o resistor viriam de arquivos .gltf. Agora tudo é feito com primitivas do Three.js, em escala 1:1. **Motivo:** o Módulo 03 cobra a estrutura da cena (árvore, troca de pai, relógio) em geometria crua; carregar arquivo externo só acrescentaria tempo de carregamento e mais um ponto de falha sem ajudar a provar nada disso.
+  2. **Inventário menor: 3 fios e 1 resistor (antes 15 fios e 5 resistores).** Os 3 LEDs continuam. **Motivo:** para mostrar parentesco e troca de pai basta um exemplo de cada peça. As quantidades do Módulo 01 voltam quando existir encaixe nos furos e a validação do circuito, que é quando elas passam a ser usadas.
+  3. **Furos sem instanciamento, por enquanto.** O plano era usar `InstancedMesh` já neste módulo. Hoje são 84 malhas separadas. **Motivo:** com 84 furos o quadro custa 0,51 ms de um teto de 16,7 ms (`docs/medidas.md`), então o instanciamento ainda não faz diferença mensurável. Ele volta quando a placa tiver todos os furos.
+  4. **Controles no lugar do rastreamento de mãos.** No visor, pegar e soltar é feito com o raio e o gatilho do controle. **Motivo:** o único teste em visor até agora foi no emulador do Meta Quest 3, que simula controles. O rastreamento de mãos fica para quando o grupo tiver um visor real para testar.
+  5. **Qualquer componente prende na placa.** Na primeira versão do Módulo 03 só o fio jumper virava filho da protoboard ao ser solto sobre ela. Agora LED, resistor e fio fazem isso. **Motivo:** nos testes, LED e resistor soltos sobre a placa ficavam para trás quando a placa era movida, o que não acontece na bancada real. O encaixe exato nos furos continua planejado.
+  6. **LED com 1 cm de diâmetro (antes 0,5 cm).** **Motivo:** com 0,5 cm a peça ficava pequena demais para acertar com o mouse e com o raio do controle na distância da câmera.
+  7. **Um indicador de custo só, preso à câmera.** A versão anterior desta especificação descrevia um monitor 3D na bancada e um HUD em HTML. O que foi implementado é um painel único (`src/performance.ts`), filho da câmera. **Motivo:** um HUD em HTML não aparece dentro do visor, e um monitor fixo na bancada sai de vista quando a pessoa gira a câmera. Preso à câmera, o painel fica visível na tela e no visor.
+  8. **Área de seleção invisível em volta das peças.** Cada componente ganhou uma caixa invisível um pouco maior que ele (3 cm no LED). **Motivo:** nos testes com o emulador, acertar o raio do controle num LED de 1 cm era muito difícil. O raio acerta a caixa e seleciona a peça inteira. A caixa não é desenhada.
 
 ### Seção 2. O que a pessoa faz ali
 
@@ -27,9 +35,9 @@ A pessoa posiciona-se em frente à bancada virtual e observa a protoboard e band
 | **Bancada de Laboratório** | 1 | Código (`THREE.BoxGeometry` + `CylinderGeometry`) | Não | Filho de `Scene` | Tampo de 1,20 m x 0,70 m x 0,04 m a 0,98 m do piso com 4 pernas e 2 bandejas organizadoras. |
 | **Protoboard** | 1 | Código (`THREE.Group` composto) | Sim | Filho de `Scene` | Base de 16,5 cm x 5,5 cm x 1,2 cm. Pode ser transladada na bancada para comprovar que mover o pai translada seus filhos. |
 | **Fios Jumpers** | 3 | Código (`THREE.TubeGeometry` + `CubicBezierCurve3`) | Sim | `Scene` ou `Protoboard` | Fios em arco (Azul 4,5 cm, Laranja 6,0 cm, Branco 3,5 cm) com terminais condutores de 0,8 cm. |
-| **LEDs Difusos** | 3 | Código (`THREE.Group` composto) | Sim | `Scene` ou `Protoboard` | Vermelho, Verde e Amarelo (cúpula de 0,5 cm, aba e pinos condutores de 1,4 cm e 1,1 cm). |
+| **LEDs Difusos** | 3 | Código (`THREE.Group` composto) | Sim | `Scene` ou `Protoboard` | Vermelho, Verde e Amarelo (cúpula com 1 cm de diâmetro, aba e pinos condutores de 1,4 cm e 1,1 cm). |
 | **Resistor** | 1 | Código (`THREE.Group` composto) | Sim | `Scene` ou `Protoboard` | Corpo cerâmico de 1,5 cm x 0,3 cm com código de 4 faixas de cor (1kΩ) e terminais metálicos. |
-| **Monitor de Custo 3D** | 1 | Código (`THREE.Group` + `CanvasTexture`) | Não | Filho de `Scene` | Instrumento digital na bancada (18 cm x 11 cm) com taxa de quadros e custo em ms em tempo real. |
+| **Indicador de custo do quadro** | 1 | Código (`PlaneGeometry` + `CanvasTexture`, `src/performance.ts`) | Acompanha a câmera | Filho da câmera | Painel de 16 cm x 4 cm, 50 cm à frente do olho, com custo médio do quadro, qps e pior quadro. |
 
 ### Seção 4. O espaço e as escalas
 
@@ -48,20 +56,23 @@ A cena opera estritamente na escala métrica real (1 unidade no Three.js = 1,00 
 
 | Ação | O que a pessoa faz | O que o sistema faz | Se não puder |
 | :--- | :--- | :--- | :--- |
-| **Apontar (Hover)** | Passa o mouse ou mira o raio laser sobre a peça. | Realce visual (cursor vira mãozinha no desktop; material ganha emissivo azul no VR). | Nenhum realce visual ocorre. |
-| **Apanhar (Grab)** | Clica e segura o botão esquerdo (desktop) ou aperta o gatilho (VR). | O objeto se desanexa de seu pai anterior (`.attach()` para a cena/controlador) e eleva 2,5 cm no Y. | Peça travada ou fora de alcance não se move. |
-| **Transladar (X/Z)** | Arrasta o mouse sobre a tela ou move o controle no espaço. | O objeto acompanha o deslocamento horizontal mantendo a altura Y configurada. | Posição é limitada ao volume visível da bancada. |
-| **Ajustar Altura (Y)** | Gira a roda do mouse (Scroll) ou segura `Shift` + arrasto vertical, ou teclas `W`/`S`. | O objeto sobe ou desce no eixo Y na faixa de 1,00 m a 1,40 m. | Altura é travada nos limites inferior (mesa) e superior. |
-| **Rotacionar** | Pressiona a tecla `R` no teclado (ou move pulso no VR). | O objeto gira 90 graus em torno do eixo Y local. | Sem efeito se nenhum objeto estiver selecionado. |
-| **Encaixar / Soltar** | Solta o botão do mouse ou gatilho sobre a protoboard. | O objeto troca de pai para a `Protoboard` via reparenting atômico (`.attach()`) e assenta nos furos (Y local = 0,009 m). | Se solto fora da placa, é reparentado para a `Scene` e repousa no tampo da mesa (Y = 1,018 m). |
+| **Apontar** | Mira o raio do controle sobre a peça (VR). No desktop, passa o mouse. | No VR, as malhas da peça ganham emissivo azulado (`0x334466`). No desktop não há realce. | Nada acontece. |
+| **Apanhar** | Clica e segura sobre a peça (desktop) ou aperta o gatilho (VR). | Desktop: se a peça estava presa na placa, volta a ser filha da cena (`scene.attach`) e a órbita da câmera é desligada. VR: a peça vira filha do controle (`controller.attach`). | Clique fora de uma peça: a câmera continua orbitando. |
+| **Transladar** | Arrasta o mouse (desktop) ou move o controle (VR). | Desktop: a peça anda num plano horizontal na altura da mesa (y = 1,025 m). VR: a peça acompanha o controle, por ser filha dele. | — |
+| **Soltar** | Solta o botão do mouse ou o gatilho. | Peça (LED, resistor ou fio) solta sobre a protoboard vira filha dela (`protoboard.attach`) e passa a andar junto com a placa. Peça solta fora da placa vira filha da cena. Nos dois casos a peça é assentada: fica reta e apoiada na placa ou no tampo, dentro dos limites. | — |
+| **Ajustar altura e rotacionar** | *Planejado:* roda do mouse ou `Shift` + arrasto para altura, tecla `R` para girar 90°. | *Ainda não implementado.* | — |
 
 ### Seção 6. A tarefa e sua validação
 
 - **Estado Inicial:** Bancada com protoboard vazia e peças organizadas nas bandejas laterais (LEDs e resistores à direita, fios à esquerda).
 - **Estado Final:** Circuito elétrico contínuo fechado entre a trilha positiva (VCC) e a trilha de terra (GND), contendo pelo menos um fio jumper, um resistor e um LED inseridos nos barramentos correspondentes, resultando na ativação emissiva do LED.
-- **Validação:** Validação estrutural de nós de circuito via percurso em grafo topológico a cada operação de encaixe bem-sucedida.
+- **Validação (planejada, ainda não implementada):** a cada encaixe aceito, uma busca no grafo de conexões parte do VCC e procura um caminho contínuo até o GND passando por um LED.
 
 ### Seção 7. Regras de encaixe e tolerâncias
+
+*Implementado hoje (`assentar`, em `src/reparent.ts`):* ao soltar, a peça fica na horizontal (só o giro em Y é mantido). Presa na placa, ela fica dentro da área da placa, com Y local de 0,009 m. Solta fora da placa, volta para cima do tampo, dentro dos limites da mesa.
+
+*Planejado para o próximo módulo:* as folgas abaixo e o encaixe exato nos furos.
 
 Para assegurar usabilidade sem exigir microprecisão milimétrica:
 
@@ -71,10 +82,18 @@ Para assegurar usabilidade sem exigir microprecisão milimétrica:
 
 ### Seção 8. Retorno ao usuário
 
-- **Objeto sob a mira:** Cursor `grab` no desktop e emissivo suave azulino (`0x334466`) nas malhas sob o laser no VR.
-- **Objeto apanhado:** Elevação imediata de +2,5 cm no Y e cursor `grabbing`.
-- **Encaixe na protoboard:** Reparenting atômico registrado no console e no HUD de tela, com atualização imediata da contagem de nós filhos da placa.
-- **Sucesso do circuito:** O material da cúpula do LED altera sua cor emissiva para brilho intenso com ativação de ponto de luz local.
+Implementado hoje:
+
+- **Objeto sob a mira (VR):** emissivo azulado (`0x334466`) em todas as malhas da peça apontada.
+- **Objeto apanhado:** a peça acompanha o mouse ou o controle.
+- **Peça solta sobre a placa:** vira filha da protoboard; mover a placa leva a peça junto.
+- **Área de seleção:** cada peça tem uma caixa invisível maior que ela, para o raio e o mouse acertarem com facilidade.
+- **Troca de pai conferida em números:** ao abrir o ambiente, o console do navegador mostra a tabela gerada por `conferirTrocaDePai()` (`src/reparent.ts`), com a posição no mundo antes e depois.
+
+Planejado:
+
+- Cursor de mão no desktop, elevação da peça ao ser apanhada, som de encaixe aceito e recusado.
+- **Sucesso do circuito:** a cúpula do LED fica emissiva e acende um ponto de luz local.
 
 ---
 
@@ -82,7 +101,7 @@ Para assegurar usabilidade sem exigir microprecisão milimétrica:
 
 ### Seção 9. Os três regimes
 
-> **Declaração do Estado Atual (Módulo 03):** O regime **Na tela (inline)** é o **único plenamente funcional neste ponto do percurso e roda sem equipamento adicional em qualquer computador convencional**. Os regimes **No visor (VR)** e **Pela câmera (AR)** contam com a sonda de capacidades de hardware ativa (`src/capabilities.ts`) e infraestrutura de controladores e hit-test preparados, constituindo metas de entrega para os blocos posteriores quando o hardware for disponibilizado.
+> **Declaração do Estado Atual (Módulo 03):** O regime **Na tela (inline)** é o **único plenamente funcional neste ponto do percurso e roda sem equipamento adicional em qualquer computador convencional**. Os regimes **No visor (VR)** e **Pela câmera (AR)** contam com a sonda de capacidades de hardware ativa (`src/capabilities.ts`) e infraestrutura de controladores e hit-test preparados, constituindo metas de entrega para os blocos posteriores quando o hardware for disponibilizado. Hoje as duas sessões já abrem no Chrome com o emulador Immersive Web Emulator (Meta Quest 3 emulado); a tabela de aparelhos testados está em `docs/medidas.md`.
 
 | Aspecto | Na tela (Inline) — **Ativo** | No visor (Immersive VR) — *Em preparação* | Pela câmera (Immersive AR) — *Em preparação* |
 | :--- | :--- | :--- | :--- |
@@ -96,19 +115,19 @@ Para assegurar usabilidade sem exigir microprecisão milimétrica:
 
 - **Teto Orçamentário Declarado:** **16,67 ms por quadro** (taxa constante de 60 quadros por segundo em regime de tela).
 - **Avanço contra o Relógio:** O avanço da cena e da física não é atrelado à contagem de quadros (`frames`), mas sim ao delta de tempo real medido a cada iteração via `THREE.Clock.getDelta()`. Dispositivos mais rápidos ou mais lentos avançam a simulação na mesma velocidade temporal.
-- **Indicador Visível na Cena:** Implementado em duas frentes complementares:
-  1. **HUD de Tela em Tempo Real (`#scene-cost-indicator`):** Exibe FPS, tempo de quadro em ms, status ("DENTRO DO TETO" vs "ACIMA DO TETO"), Draw Calls e Triângulos da GPU.
-  2. **Monitor Físico 3D no Laboratório (`MonitorCustoQuadro3D`):** Um instrumento digital modelado na bancada com `CanvasTexture` atualizada a cada quarto de segundo.
-- **Ordem de Degradação:** Caso o custo ultrapasse 20,0 ms por mais de 60 quadros consecutivos:
+- **Indicador visível na cena:** painel em `CanvasTexture` preso à câmera (`src/performance.ts`), por isso aparece igual na tela e no visor. A cada 0,5 s mostra o custo médio do quadro contra o teto, os quadros por segundo e o pior quadro do intervalo. O texto fica verde abaixo do teto e vermelho acima.
+- **O que o indicador mede:** o tempo de CPU do quadro inteiro (atualização + `renderer.render`), com `performance.now()`. Não mede o tempo que a GPU leva para desenhar.
+- **Custo medido:** 0,51 ms por quadro (pior 0,8 ms) a 60 qps, no regime de tela, em um PC com Intel i5-12400F, 16 GB e RTX 3060, Chrome 150. Os 60 qps são o limite do monitor, não da cena. Detalhes em `docs/medidas.md`.
+- **Ordem de degradação (planejada, ainda não implementada):** caso o custo ultrapasse 20,0 ms por mais de 60 quadros consecutivos:
   1. Desativar sombras dinâmicas da luz direcional (`dirLight.castShadow = false`);
-  2. Reduzir a taxa de atualização do display 3D de diagnóstico;
+  2. Reduzir a taxa de atualização do indicador de custo;
   3. Desativar o antialiasing do WebGLRenderer.
 
 ### Seção 11. Erros, limites e degradação
 
-- **WebXR não disponível:** Se o navegador não suportar a API WebXR, a sonda de capacidades acusa o estado `"não suportado"`, oculta os botões de sessão imersiva e mantém o regime de tela perfeitamente ativo e navegável.
+- **WebXR não disponível:** Se o navegador não suportar a API WebXR, a sonda de capacidades acusa o estado `"não suportado"`, desativa os botões "Testar VR" e "Testar AR" e mantém o regime de tela perfeitamente ativo e navegável.
 - **Permissão de Câmera/VR negada:** O erro `NotAllowedError` é capturado e classificado separadamente como `"negado"` pela sonda, sem travar a aplicação nem causar erro silencioso.
-- **Peça solta fora do alcance:** Peças soltas longe da protoboard permanecem repousadas no tampo ou bandejas da bancada, sem sofrer perdas ou comportamentos instáveis.
+- **Peça solta fora da placa ou fora da mesa:** a peça volta para cima do tampo, reta, e é trazida para dentro dos limites da mesa (1,20 m x 0,70 m, com 2 cm de margem). Não há colisão entre peças: a placa pode ser solta por cima de uma peça que está no tampo (planejado).
 
 ---
 
@@ -123,7 +142,7 @@ Para assegurar usabilidade sem exigir microprecisão milimétrica:
 | **Bancada e Bandejas** | Geometrias procedurais (`BoxGeometry`, `CylinderGeometry`) | Código próprio (`src/scene.ts`) | Autoria própria | Suporte físico da cena. |
 | **Protoboard Estrutural** | Malhas agrupadas em `THREE.Group` | Código próprio (`src/scene.ts`) | Autoria própria | Base e barramento de alimentação. |
 | **Fios Jumpers, LEDs e Resistores** | Tubos de Bézier, cilindros e esferas | Código próprio (`src/scene.ts`) | Autoria própria | Componentes de circuito móveis. |
-| **Monitor Digital 3D** | Caixa plástica + `CanvasTexture` dinâmico | Código próprio (`src/performance.ts`) | Autoria própria | Indicador de custo dentro do mundo virtual. |
+| **Indicador de custo do quadro** | `PlaneGeometry` + `CanvasTexture` | Código próprio (`src/performance.ts`) | Autoria própria | Indicador de custo dentro da cena, preso à câmera. |
 | **Tipografia Digital** | Web Fonts do sistema (monospace / sans-serif) | CSS nativo | Livre | Renderização dos números de diagnóstico. |
 
 ### Seção 13. Plano de construção por blocos
