@@ -248,6 +248,7 @@ export class XRScene {
     pin2.position.set(0.002, -0.0045, 0);
     led.add(pin2);
 
+    this.addHitbox(led, 0.03, 0.03, 0.03, 0.004);
     return led;
   }
 
@@ -284,6 +285,7 @@ export class XRScene {
     pinR.position.set(half, -0.004, 0);
 
     wireGroup.add(pinL, pinR);
+    this.addHitbox(wireGroup, span, 0.045, 0.015, 0.0135);
     return wireGroup;
   }
 
@@ -323,11 +325,33 @@ export class XRScene {
     leadR.position.set(0.012, 0, 0);
 
     group.add(leadL, leadR);
+    this.addHitbox(group, 0.032, 0.02, 0.015, 0.002);
     return group;
   }
 
   /** Chamado no loop de animação para atualizações dinâmicas se necessário */
   update(_delta: number): void {
     // Espaço aberto para física ou rotação/animações sutis
+  }
+
+  /**
+   * Área de seleção invisível, maior que a peça, para o raio do controle e o
+   * mouse acertarem peças de poucos milímetros. Não é desenhada, mas o
+   * Raycaster atinge a malha mesmo com o material invisível.
+   */
+  private addHitbox(
+    group: THREE.Group,
+    largura: number,
+    altura: number,
+    profundidade: number,
+    y: number,
+  ): void {
+    const hitbox = new THREE.Mesh(
+      new THREE.BoxGeometry(largura, altura, profundidade),
+      new THREE.MeshBasicMaterial({ visible: false }),
+    );
+    hitbox.name = 'Área de seleção';
+    hitbox.position.y = y;
+    group.add(hitbox);
   }
 }

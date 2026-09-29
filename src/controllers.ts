@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFactory.js';
+import { assentar } from './reparent';
 
 /**
  * Configura os controllers XR:
@@ -74,8 +75,8 @@ export function setupControllers(
     return null;
   }
 
-  function isJumperWire(object: THREE.Object3D): boolean {
-    return object.name === 'Fio Jumper';
+  function isComponent(object: THREE.Object3D): boolean {
+    return object !== protoboard; // LED, resistor e fio podem prender na placa
   }
 
   function isOverProtoboard(controller: THREE.XRTargetRaySpace): boolean {
@@ -97,12 +98,13 @@ export function setupControllers(
   function onSelectEnd(controller: THREE.XRTargetRaySpace): void {
     const obj = selected.get(controller);
     if (obj) {
-      if (isJumperWire(obj) && isOverProtoboard(controller)) {
+      if (isComponent(obj) && isOverProtoboard(controller)) {
         protoboard.attach(obj);
       } else {
         // Reparenting de retorno: devolve o nó para o espaço do mundo 'scene'
         scene.attach(obj);
       }
+      assentar(obj, protoboard);
       selected.delete(controller);
     }
   }

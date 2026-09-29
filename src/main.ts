@@ -5,7 +5,7 @@ import { setupControllers } from './controllers';
 import { setupARHitTest } from './ar';
 import { capabilityProbe } from './capabilities';
 import { createFrameCostIndicator } from './performance';
-import { conferirTrocaDePai } from './reparent';
+import { conferirTrocaDePai, assentar } from './reparent';
 
 // --- Renderer ---
 const container = document.getElementById('app') as HTMLDivElement;
@@ -145,12 +145,13 @@ function setupDesktopInteraction(
 
   const stopDrag = () => {
     if (draggedObject) {
-      if (draggedObject.name === 'Fio Jumper') {
+      if (draggedObject !== protoboard) {
         raycaster.setFromCamera(dropPoint, camera);
         if (raycaster.intersectObject(protoboard, true).length > 0) {
           protoboard.attach(draggedObject);
         }
       }
+      assentar(draggedObject, protoboard);
       draggedObject = null;
       orbitControls.enabled = true; // Reabilita órbita da câmera
     }

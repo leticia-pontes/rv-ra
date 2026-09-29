@@ -36,7 +36,7 @@ export function setupARHitTest(
   return {
     update(frame: XRFrame): void {
       const session = renderer.xr.getSession();
-      if (!session) return;
+      if (!session || session.environmentBlendMode === 'opaque') return; // VR não usa hit-test
 
       const referenceSpace = renderer.xr.getReferenceSpace();
       if (!referenceSpace) return;
@@ -63,6 +63,7 @@ export function setupARHitTest(
         session.addEventListener('end', () => {
           requested = false;
           hitTestSource = null;
+          reticle.visible = false;
         });
       }
 
