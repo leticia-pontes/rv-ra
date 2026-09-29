@@ -4,6 +4,8 @@ import { XRScene } from './scene';
 import { setupControllers } from './controllers';
 import { setupARHitTest } from './ar';
 import { capabilityProbe } from './capabilities';
+import { createFrameCostIndicator } from './performance';
+import { conferirTrocaDePai } from './reparent';
 
 // --- Renderer ---
 const container = document.getElementById('app') as HTMLDivElement;
@@ -42,10 +44,18 @@ void capabilityProbe.initialize(renderer, report);
 // --- Suporte a Mouse no Desktop (Mudar peças de lugar com clique e arrasto) ---
 setupDesktopInteraction(renderer.domElement, xr.camera, xr.scene, xr.interactive, xr.protoboard, orbit);
 
+// --- Indicador de custo do quadro (dentro da cena, preso à câmera) ---
+xr.scene.add(xr.camera); // a câmera entra no grafo para o painel filho dela ser desenhado
+const frameCost = createFrameCostIndicator(xr.camera);
+
+// --- Conferência da troca de pai em números (passo 8) ---
+console.table(conferirTrocaDePai());
+
 // --- Loop de animação ---
 const clock = new THREE.Clock();
 
 renderer.setAnimationLoop((_timestamp, frame) => {
+  frameCost.begin();
   const delta = clock.getDelta();
   xr.update(delta);
   controllers.update();
@@ -55,6 +65,7 @@ renderer.setAnimationLoop((_timestamp, frame) => {
     capabilityProbe.update(frame);
   }
   renderer.render(xr.scene, xr.camera);
+  frameCost.end(delta);
 });
 
 // --- Responsividade ---
