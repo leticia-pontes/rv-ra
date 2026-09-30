@@ -95,7 +95,7 @@ const PLACA_Z = 0.025;
 const giro = new THREE.Euler();
 
 /** Deixa a peça na horizontal, mantendo só o giro em torno do eixo Y. */
-function nivelar(obj: THREE.Object3D): void {
+export function nivelar(obj: THREE.Object3D): void {
   giro.setFromQuaternion(obj.quaternion, 'YXZ');
   obj.rotation.set(0, giro.y, 0);
 }

@@ -5,7 +5,7 @@ import { setupControllers } from './controllers';
 import { setupARHitTest } from './ar';
 import { capabilityProbe } from './capabilities';
 import { createFrameCostIndicator } from './performance';
-import { conferirTrocaDePai, assentar } from './reparent';
+import { conferirTrocaDePai, assentar, nivelar } from './reparent';
 
 // --- Renderer ---
 const container = document.getElementById('app') as HTMLDivElement;
@@ -93,8 +93,11 @@ function setupDesktopInteraction(
   const planeIntersection = new THREE.Vector3();
   const offset = new THREE.Vector3();
   const dropPoint = new THREE.Vector2();
+  const worldUp = new THREE.Vector3(0, 1, 0);
 
   let draggedObject: THREE.Object3D | null = null;
+  let isRotating = false;
+  let previousMouseX = 0;
 
   function findInteractiveParent(obj: THREE.Object3D | null): THREE.Object3D | null {
     let curr = obj;
@@ -103,6 +106,8 @@ function setupDesktopInteraction(
     }
     return curr;
   }
+
+  domElement.addEventListener('contextmenu', (e) => e.preventDefault()); // Evita o menu do navegador ao clicar com botão direito
 
   domElement.addEventListener('pointerdown', (event) => {
     if (renderer.xr.isPresenting) return; // Em modo XR os controllers assumem
@@ -118,13 +123,28 @@ function setupDesktopInteraction(
       const target = findInteractiveParent(hits[0].object);
       if (target) {
         draggedObject = target;
-        if (draggedObject.parent === protoboard) {
-          _scene.attach(draggedObject);
+        
+        // Diferencia pelo botão do mouse
+        if (event.button === 2) {
+          // Botão direito: rotacionar em 1 eixo (horizontal)
+          isRotating = true;
+          previousMouseX = event.clientX;
+          nivelar(draggedObject);
+          orbitControls.enabled = false; // Desativa órbita para girar a peça
+          return;
         }
-        orbitControls.enabled = false; // Desativa órbita para arrastar a peça
 
-        if (raycaster.ray.intersectPlane(dragPlane, planeIntersection)) {
-          offset.copy(draggedObject.position).sub(planeIntersection);
+        // Botão esquerdo: mover
+        if (event.button === 0) {
+          isRotating = false;
+          if (draggedObject.parent === protoboard) {
+            _scene.attach(draggedObject);
+          }
+          orbitControls.enabled = false; // Desativa órbita para arrastar a peça
+
+          if (raycaster.ray.intersectPlane(dragPlane, planeIntersection)) {
+            offset.copy(draggedObject.position).sub(planeIntersection);
+          }
         }
       }
     }
@@ -132,6 +152,17 @@ function setupDesktopInteraction(
 
   domElement.addEventListener('pointermove', (event) => {
     if (!draggedObject) return;
+
+    if (isRotating) {
+      const deltaX = event.clientX - previousMouseX;
+      previousMouseX = event.clientX;
+
+      const ROTATION_SPEED = 0.008;
+
+      // Eixo Y do mundo: rotação apenas horizontal (como rodar uma garrafa)
+      draggedObject.rotateOnWorldAxis(worldUp, deltaX * ROTATION_SPEED);
+      return;
+    }
 
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
@@ -145,6 +176,14 @@ function setupDesktopInteraction(
 
   const stopDrag = () => {
     if (draggedObject) {
+      if (isRotating) {
+        isRotating = false;
+        assentar(draggedObject, protoboard);
+        draggedObject = null;
+        orbitControls.enabled = true;
+        return;
+      }
+
       if (draggedObject !== protoboard) {
         raycaster.setFromCamera(dropPoint, camera);
         if (raycaster.intersectObject(protoboard, true).length > 0) {
