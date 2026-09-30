@@ -27,7 +27,7 @@ Documentos:
 *   **Virtual Reality (VR) Imersivo**:
     *   Suporte a tracking de controllers 3D.
     *   Sistema de mira/apontamento por raio laser (raycast).
-    *   Mecânica de pegar (grab) e soltar (release) objetos usando os gatilhos dos controles.
+    *   Mecânica de pegar (grab) e soltar (release) e rotacionar objetos usando os gatilhos dos controles.
     *   Efeito de realce (emissivo) ao apontar para objetos interativos.
 *   **Augmented Reality (AR) com Hit-Testing**:
     *   Detecção de superfícies reais em tempo real (chão, mesas, etc.).
