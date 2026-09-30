@@ -121,7 +121,7 @@ function setupDesktopInteraction(
 
     if (hits.length > 0) {
       const target = findInteractiveParent(hits[0].object);
-      if (target) {
+      if (target && (event.button === 0 || event.button === 2)) { // roda do mouse fica com a câmera
         draggedObject = target;
         
         // Diferencia pelo botão do mouse
