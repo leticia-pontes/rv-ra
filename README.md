@@ -37,6 +37,7 @@ Documentos:
     *   Visualização 3D convencional no navegador quando fora de dispositivos XR.
     *   Navegação orbital intuitiva via mouse (OrbitControls).
     *   Clique e arraste para mover as peças sobre a mesa. Peça solta sobre a protoboard fica presa nela e anda junto com a placa.
+    *   Botão direito + arrastar sobre uma peça para girá-la em torno do eixo vertical.
 *   **Cena como árvore (grafo de cena)**:
     *   Cada peça é um `THREE.Group` com suas partes como filhas, mais uma área de seleção invisível que facilita acertar peças pequenas.
     *   Troca de pai com `attach()`, preservando a posição no mundo. A conferência em números aparece no console (F12) ao abrir o ambiente.

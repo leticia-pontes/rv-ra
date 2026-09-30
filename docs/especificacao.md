@@ -18,13 +18,14 @@
   5. **Qualquer componente prende na placa.** Na primeira versão do Módulo 03 só o fio jumper virava filho da protoboard ao ser solto sobre ela. Agora LED, resistor e fio fazem isso. **Motivo:** nos testes, LED e resistor soltos sobre a placa ficavam para trás quando a placa era movida, o que não acontece na bancada real. O encaixe exato nos furos continua planejado.
   6. **LED com 1 cm de diâmetro (antes 0,5 cm).** **Motivo:** com 0,5 cm a peça ficava pequena demais para acertar com o mouse e com o raio do controle na distância da câmera.
   7. **Um indicador de custo só, preso à câmera.** A versão anterior desta especificação descrevia um monitor 3D na bancada e um HUD em HTML. O que foi implementado é um painel único (`src/performance.ts`), filho da câmera. **Motivo:** um HUD em HTML não aparece dentro do visor, e um monitor fixo na bancada sai de vista quando a pessoa gira a câmera. Preso à câmera, o painel fica visível na tela e no visor.
-  8. **Área de seleção invisível em volta das peças.** Cada componente ganhou uma caixa invisível um pouco maior que ele (3 cm no LED). **Motivo:** nos testes com o emulador, acertar o raio do controle num LED de 1 cm era muito difícil. O raio acerta a caixa e seleciona a peça inteira. A caixa não é desenhada.
+  8. **Rotação livre com o botão direito, em vez de passos de 90° com a tecla `R`.** A peça gira em torno do eixo vertical enquanto o mouse é arrastado. **Motivo:** arrastar dá controle fino e não depende do teclado. O passo de 90° pode voltar como ajuste fino quando existir o encaixe nos furos.
+  9. **Área de seleção invisível em volta das peças.** Cada componente ganhou uma caixa invisível um pouco maior que ele (3 cm no LED). **Motivo:** nos testes com o emulador, acertar o raio do controle num LED de 1 cm era muito difícil. O raio acerta a caixa e seleciona a peça inteira. A caixa não é desenhada.
 
 ### Seção 2. O que a pessoa faz ali
 
 A pessoa posiciona-se em frente à bancada virtual e observa a protoboard e bandejas organizadoras com componentes eletrônicos. Ela apanha componentes com o cursor/mão, ajusta sua elevação e rotação, e os posiciona sobre os orifícios da placa para encaixe. O ambiente considera a tarefa concluída quando um circuito fechado contínuo é estabelecido entre o barramento positivo (VCC) e o barramento negativo (GND), passando pelo resistor e pelo LED, resultando no acendimento luminoso da peça.
 
-- **O que se faz com as mãos:** O usuário realiza pinça, elevação nos eixos X, Y e Z e rotação de 90 graus dos componentes, transportando-os da bandeja para a placa.
+- **O que se faz com as mãos:** O usuário realiza pinça, elevação nos eixos X, Y e Z e rotação em torno do eixo vertical dos componentes, transportando-os da bandeja para a placa.
 - **O que muda com o visor:** O visor estereoscópico fornece percepção direta de paralaxe e profundidade para julgar a altura dos pinos sobre a placa, reduzindo a tentativa e erro típica de telas 2D.
 - **O que a câmera precisa provar:** A cena será ancorada horizontalmente sobre uma mesa física real do laboratório por meio de hit-testing (AR), mantendo a protoboard estável enquanto o usuário caminha ao redor.
 
@@ -60,7 +61,8 @@ A cena opera estritamente na escala métrica real (1 unidade no Three.js = 1,00 
 | **Apanhar** | Clica e segura sobre a peça (desktop) ou aperta o gatilho (VR). | Desktop: se a peça estava presa na placa, volta a ser filha da cena (`scene.attach`) e a órbita da câmera é desligada. VR: a peça vira filha do controle (`controller.attach`). | Clique fora de uma peça: a câmera continua orbitando. |
 | **Transladar** | Arrasta o mouse (desktop) ou move o controle (VR). | Desktop: a peça anda num plano horizontal na altura da mesa (y = 1,025 m). VR: a peça acompanha o controle, por ser filha dele. | — |
 | **Soltar** | Solta o botão do mouse ou o gatilho. | Peça (LED, resistor ou fio) solta sobre a protoboard vira filha dela (`protoboard.attach`) e passa a andar junto com a placa. Peça solta fora da placa vira filha da cena. Nos dois casos a peça é assentada: fica reta e apoiada na placa ou no tampo, dentro dos limites. | — |
-| **Ajustar altura e rotacionar** | *Planejado:* roda do mouse ou `Shift` + arrasto para altura, tecla `R` para girar 90°. | *Ainda não implementado.* | — |
+| **Rotacionar** | Botão direito + arrastar sobre a peça (desktop). No VR, gira o controle segurando a peça. | Desktop: a peça gira em torno do eixo vertical do mundo (`rotateOnWorldAxis`), 0,008 rad por pixel de arrasto; ao soltar, é assentada. VR: a peça acompanha o giro do controle; ao soltar, `assentar` mantém só o giro em Y. | Clique com a roda do mouse sobre a peça não faz nada; a câmera continua com o controle. |
+| **Ajustar altura** | *Planejado:* roda do mouse ou `Shift` + arrasto. | *Ainda não implementado.* | — |
 
 ### Seção 6. A tarefa e sua validação
 

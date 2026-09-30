@@ -62,8 +62,8 @@ Este e o ponto de entrada usado pelo `index.html`.
 - Linha 5 importa `setupARHitTest`, que monta o sistema AR.
 - Linha 6 importa `capabilityProbe`, singleton que consulta o WebXR.
 - Linha 7 importa `createFrameCostIndicator`, o indicador de custo do quadro.
-- Linha 8 importa `conferirTrocaDePai`, a conferencia da troca de pai, e
-  `assentar`, usado ao soltar uma peca.
+- Linha 8 importa `conferirTrocaDePai`, a conferencia da troca de pai,
+  `assentar`, usado ao soltar uma peca, e `nivelar`, usado ao comecar a girar.
 
 ### Linhas 10-18: renderer e DOM
 
@@ -121,14 +121,16 @@ Este e o ponto de entrada usado pelo `index.html`.
 
 ### Funcao [setupDesktopInteraction](../src/main.ts#L82)
 
-Funcao nas linhas 82-162. Recebe canvas, camera, cena, lista de objetos,
-protoboard e controles orbitais. Seu objetivo e arrastar componentes com mouse.
+Funcao nas linhas 82-201. Recebe canvas, camera, cena, lista de objetos,
+protoboard e controles orbitais. Seu objetivo e mover e girar componentes com
+o mouse.
 
-- Linhas 90-95 criam raycaster, coordenadas do mouse, plano horizontal,
-  interseccao, deslocamento e ponto de soltura.
-- Linha 97 guarda o objeto atualmente arrastado.
+- Linhas 90-96 criam raycaster, coordenadas do mouse, plano horizontal,
+  interseccao, deslocamento, ponto de soltura e o eixo vertical do mundo.
+- Linhas 98-100 guardam o objeto atual, se ele esta sendo girado e a ultima
+  posicao X do mouse.
 
-#### Funcao interna [findInteractiveParent](../src/main.ts#L99)
+#### Funcao interna [findInteractiveParent](../src/main.ts#L102)
 
 - Recebe qualquer objeto atingido pelo raio.
 - Sobe pela cadeia `parent` enquanto o objeto nao esta em `interactive`.
@@ -136,15 +138,21 @@ protoboard e controles orbitais. Seu objetivo e arrastar componentes com mouse.
 
 #### Eventos internos
 
-- Linhas 107-131: `pointerdown` ignora XR, converte a tela para coordenadas
-  normalizadas, dispara o raio, encontra o alvo, retira-o da protoboard se
-  necessario, desabilita a orbita e calcula o deslocamento.
-- Linhas 133-144: `pointermove` atualiza o raio e move o objeto no plano da
-  mesa enquanto existe um objeto sendo arrastado.
-- Linhas 146-158: `stopDrag` trata soltura e cancelamento. Componentes (qualquer
-  peca que nao seja a propria placa) soltos sobre a protoboard sao anexados a ela; depois `assentar` deixa a peca
-  reta e apoiada, e a orbita volta a ser habilitada.
-- Linhas 160-161 registram `pointerup` e `pointercancel`.
+- Linha 110 bloqueia o menu do navegador no botao direito.
+- Linhas 112-151: `pointerdown` ignora XR, converte a tela para coordenadas
+  normalizadas, dispara o raio e encontra o alvo. So reage aos botoes esquerdo
+  e direito; a roda do mouse fica com a camera (linha 124). Botao direito
+  (linhas 128-135): marca rotacao, nivela a peca e desliga a orbita. Botao
+  esquerdo (linhas 138-148): retira a peca da protoboard se necessario, desliga
+  a orbita e calcula o deslocamento.
+- Linhas 153-175: `pointermove`. Girando (linhas 156-165), aplica
+  `rotateOnWorldAxis` no eixo vertical, 0,008 rad por pixel. Arrastando, move a
+  peca no plano da mesa.
+- Linhas 177-197: `stopDrag` trata soltura e cancelamento. Depois de girar,
+  so assenta a peca. Depois de arrastar, componentes (qualquer peca que nao
+  seja a propria placa) soltos sobre a protoboard sao anexados a ela; depois
+  `assentar` deixa a peca reta e apoiada, e a orbita volta a ser habilitada.
+- Linhas 199-200 registram `pointerup` e `pointercancel`.
 
 ## 4. [src/scene.ts](../src/scene.ts)
 
@@ -400,7 +408,8 @@ Conferencia da troca de pai em numeros.
   registrado em [docs/medidas.md](medidas.md).
 - [assentar](../src/reparent.ts#L108) e chamada logo depois da troca de pai,
   quando a pessoa solta uma peca (mouse e VR). Primeiro `nivelar` tira a
-  inclinacao e mantem so o giro em Y. Se a peca ficou presa na placa, a posicao
+  inclinacao e mantem so o giro em Y (`nivelar` tambem e usado por
+  `src/main.ts` quando a pessoa comeca a girar uma peca). Se a peca ficou presa na placa, a posicao
   local e limitada a area da placa e o Y local vira 0,009 m. Se ficou solta no
   mundo, a posicao e limitada ao tampo da mesa e o Y volta para a altura de
   repouso (1,008 m para a placa, 1,018 m para as outras pecas). A troca de pai
@@ -433,10 +442,10 @@ nem a atualizacao da orbita presente em `src/main.ts`.
 - Linhas 5-9 definem codificacao, viewport, titulo e carregam `src/theme.ts`.
 - Linha 11 carrega `style.css`.
 - Linha 15 cria `#app`, destino do canvas.
-- Linhas 16-20 criam uma faixa de dicas de uso no desktop: arrastar peca,
-  girar a camera e aproximar com a roda do mouse.
-- Linhas 22-34 criam o painel de capacidades e seus controles.
-- Linha 36 carrega `src/main.ts`, iniciando a aplicacao.
+- Linhas 16-21 criam uma faixa de dicas de uso no desktop: arrastar peca,
+  girar peca com o botao direito, girar a camera e aproximar com a roda do mouse.
+- Linhas 23-35 criam o painel de capacidades e seus controles.
+- Linha 37 carrega `src/main.ts`, iniciando a aplicacao.
 
 ### [vite.config.ts](../vite.config.ts)
 
@@ -497,7 +506,7 @@ A unica linha importa os tipos oficiais do cliente Vite, incluindo tipos de
 Implementado no codigo atual:
 
 - Cena 3D, mesa, protoboard, LEDs, fios e resistor.
-- Movimento com mouse no desktop.
+- Movimento e rotacao (botao direito) com mouse no desktop.
 - Raio laser e pegar/soltar com controles VR.
 - Realce emissivo ao apontar.
 - Hit-test AR e colocacao de cilindro de exemplo.
@@ -510,13 +519,12 @@ Descrito na especificacao, mas ainda nao implementado nos arquivos atuais:
 
 - BFS/DFS para validar circuito entre VCC e GND.
 - Snap preciso dos pinos nos furos.
-- Rotacao em incrementos de 90 graus.
 - Som de sucesso ou erro.
 - LED acendendo por validacao eletrica.
 - Instanciamento GPU dos furos.
 - LOD automatico e degradacao abaixo de 45 FPS.
 - Ancoragem AR persistente da protoboard.
-- Ajuste de altura com `Scroll`/`Shift` e rotacao com a tecla `R`.
+- Ajuste de altura com `Scroll`/`Shift`.
 
 Essa diferenca e importante: [docs/especificacao.md](especificacao.md) descreve
 o comportamento desejado do projeto, enquanto este documento descreve o que o
